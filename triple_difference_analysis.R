@@ -1,3 +1,5 @@
+setwd("~/Desktop/texas_workplace_raid")
+
 library(dplyr)
 library(data.table)
 library(tidyr)
@@ -20,32 +22,14 @@ library('starpolishr')
 theme <- theme_bw() + theme(text = element_text(family = "Georgia",size=8)) 
 theme_set(theme)
 
+combined = readRDS('data/analysis/combined_sixthgrade.rds')
+c = combined[[2]] %>% mutate(campus = str_replace(campus,'white|hisp','')) %>% pull(campus) %>% unique()
 triple_df = fread('data/campus/staar_data_full.csv') %>%
   filter(year >= 15 & group %in% c('hisp','white') & grade == 6) %>%
-  filter(!is.na(percent_hispanic) & 
-           !is.na(percent_lep) & 
-           !is.na(percent_econdis)) %>%
-  group_by(campus,group,subject) %>%
+  filter(campus %in% c) %>%
+  group_by(campus,group) %>%
   mutate(count = n()) %>%
-  filter(count == 5) %>%
-  ungroup() %>%
-  mutate(time_from_raid = time_from_raid / 60) %>%
-  # remove charter schools 
-  filter(charter == 'N') %>%
-  # remove schools close to the raid but not in Allen ISD
-  filter(grade == 6 & !(time_from_raid < 27.1 & district != 43901)) %>%
-  group_by(district,campus,year) %>% 
-  mutate(count=n()) %>% 
-  # only keep Allen schools that have observations for Hispanic and white students
-  filter(!(district == 43901 & count == 2)) %>% 
-  # make sure we have data for math and reading 
-  # (some campuses only have complete reading data, for example)
-  group_by(district,campus,year,group) %>%
-  mutate(count=n()) %>%
-  filter(count == 2) %>% 
-  filter(group %in% c('white','hisp') 
-         & region %in% c(7,8,10,11,12) 
-         & nces_district == 21)
+  filter(count == 10)
 
 
 filter_summarise_data = function(df,type){

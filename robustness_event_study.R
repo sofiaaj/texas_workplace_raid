@@ -1,3 +1,5 @@
+
+setwd("~/Desktop/texas_workplace_raid")
 library(dplyr)
 library(data.table)
 library(tidyr)
@@ -22,9 +24,9 @@ theme_set(theme)
 
 # Makes event study plots
 
-reading = readRDS('data/analysis/reading_sixthgrade.rds')
-math = readRDS('data/analysis/math_sixthgrade.rds')
-combined = readRDS('data/analysis/combined_sixthgrade.rds')
+reading = readRDS('data/analysis/reading_sixthgrade.rds')[1:3]
+math = readRDS('data/analysis/math_sixthgrade.rds')[1:3]
+combined = readRDS('data/analysis/combined_sixthgrade.rds')[1:3]
 dfs = readRDS('data/analysis/all_data_controls_groups.rds')
 
 # Event study plots
@@ -51,6 +53,22 @@ run_event_study <- function(df,type){
   }
 }
 
+make_event_table = function(i){
+  print(i)
+  dfs = all_dfs[[i]]
+  test = names(all_dfs)[[i]]
+  score_plots = lapply(dfs,run_event_study,"Score")
+  passing_plots = lapply(dfs,run_event_study,"Passed")
+  es_table = etable(c(score_plots,passing_plots), tex = TRUE)
+  filename = paste0('results/tables/',test,'_event_study.tex')
+  star_tex_write(es_table,file=filename)
+}
+
+all_dfs = list(combined,reading,math)
+names(all_dfs) = c('combined','reading','math')
+lapply(1:3,make_event_table)
+
+
 make_event_study_plot = function(dfs,type){
   es <- lapply(dfs,run_event_study,type=type)
   groups <- c('White',
@@ -63,10 +81,9 @@ make_event_study_plot = function(dfs,type){
                  xlab="",
                  ylab="",
                  theme=theme(text=element_text(family="Georgia",size=8)))
-  plot = plot + scale_color_grey()
+  plot = plot + scale_color_grey() + geom_point()
 }
 
-all_dfs = list(combined,reading,math)
 score_plots = lapply(all_dfs,make_event_study_plot,"Score")
 passed_plots = lapply(all_dfs,make_event_study_plot,"Passed")
 

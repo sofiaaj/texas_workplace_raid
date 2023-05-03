@@ -40,7 +40,8 @@ full_df = fread('data/campus/staar_data_full.csv') %>%
   # (some campuses only have complete reading data, for example)
   group_by(district,campus,year,group) %>%
   mutate(count=n()) %>%
-  filter(count == 2)
+  filter(count == 2) %>%
+  mutate(passed = passed*100)
 
 white_df = full_df %>% filter(dname == 'ALLEN ISD')
 
@@ -64,11 +65,17 @@ mod_match <- matchit(treated ~ percent_hispanic + percent_lep + percent_econdis,
 
 psm_df = region_df %>% filter(campus %in% match.data(mod_match)$campus)
 
+triple_df = full_df %>% filter(campus %in% region_df$campus)
 
-dfs = list(white_df,region_df,psm_df)
+dfs = list(white_df,region_df,psm_df,triple_df)
 
 # Makes 3 datasets: reading, math, and combined
-filter_summarise_data = function(df,type){
+filter_summarise_data = function(i,type){
+  triple = FALSE
+  df = dfs[[i]]
+  if(i == 4){
+    triple = TRUE
+  }
   if(type == 'combined'){
     df = df %>%
       group_by(campus,
@@ -96,12 +103,19 @@ filter_summarise_data = function(df,type){
     rename(Score = score,
            Passed = passed,
            Mastered = mastered)
+  if(triple){
+    df = df %>%
+      mutate(allen = ifelse(district == 43901,"1","0"),
+             hispanic = ifelse(group == 'hisp',"1","0"),
+             hisp_after = ifelse(hispanic == "1" & year == "19","1","0"),
+             allen_after = ifelse(allen == "1" & year == "19","1","0"))
+  }
   return(df)
 }
 
-reading = lapply(dfs,filter_summarise_data,'reading')
-math = lapply(dfs,filter_summarise_data,'math')
-combined = lapply(dfs,filter_summarise_data,'combined')
+reading = lapply(1:4,filter_summarise_data,'reading')
+math = lapply(1:4,filter_summarise_data,'math')
+combined = lapply(1:4,filter_summarise_data,'combined')
 
 saveRDS(dfs,'data/analysis/all_data_controls_groups.rds')
 saveRDS(reading,'data/analysis/reading_sixthgrade.rds')

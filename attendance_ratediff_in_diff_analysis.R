@@ -1,3 +1,4 @@
+setwd("~/Desktop/texas_workplace_raid")
 library(dplyr)
 library(data.table)
 library(tidyr)
@@ -97,6 +98,7 @@ rbind(dfs[[1]] %>% mutate(strategy = 'Schools in region'),
   summarise(attendance_rate_hispanic = weighted.mean(attendance_rate_hispanic,num_students)) %>%
   ggplot(aes(x=year,y=attendance_rate_hispanic,linetype=treated)) +
   geom_line() + 
+  geom_point() + 
   geom_vline(xintercept=18,linetype='dashed') +
   coord_cartesian(ylim=c(96,98)) +
   facet_wrap(~strategy,nrow=2) +

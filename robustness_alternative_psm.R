@@ -47,7 +47,7 @@ full_df = fread('data/campus/staar_data_full.csv') %>%
   # remove charter schools 
   filter(charter == 'N') %>%
   # remove schools close to the raid but not in Allen ISD
-  filter(grade == 6 & !(time_from_raid < 28.5 & district != 43901)) %>%
+  filter(grade == 6 & !(time_from_raid < 27.7 & district != 43901)) %>%
   group_by(district,campus,year) %>% 
   mutate(count=n()) %>% 
   # only keep Allen schools that have observations for Hispanic and white students
@@ -163,20 +163,36 @@ for(i in 1:8){
   }
 }
 
-all_results$match <- factor(all_results$match, 
-                            levels=c("G",
-                                     "F",
-                                     "E",
-                                     "D",
-                                     "C",
-                                     "B",
-                                     "A",
-                                     "Base"))
+
+all_results = all_results %>%
+  mutate(order = case_when(
+    match == 'G' ~ 0,
+    match == 'F' ~ 1,
+    match == 'E' ~ 2,
+    match == 'D' ~ 3,
+    match == 'C' ~ 4,
+    match == 'B' ~ 5,
+    match == 'A' ~ 6,
+    match == 'Base' ~ 7
+    ),
+    match = case_when(
+    match == 'G' ~ 'Match on 2017-2018',
+    match == 'F' ~ 'Match on 2018-2019',
+    match == 'E' ~ '1 control school',
+    match == 'D' ~ '4 control schools',
+    match == 'C' ~ 'Add more variables',
+    match == 'B' ~ 'Ignore region',
+    match == 'A' ~ 'Ignore NCES',
+    match == 'Base' ~ 'Baseline'
+  ))
+
+
+
 all_results %>%
   mutate(test = factor(test,levels=c('combined','reading','math')),
          test = str_to_title(test),
          test_measure = str_to_title(test_measure)) %>%
-  ggplot(aes(x=match,y=estimate)) +
+  ggplot(aes(x=reorder(match,order),y=estimate)) +
   geom_point() +
   labs(x="") +
   geom_errorbar(aes(ymin=min,ymax=max),width=0) +

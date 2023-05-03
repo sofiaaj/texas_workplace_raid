@@ -52,6 +52,7 @@ sg_df %>%
          change = change/visits18) %>%
   ggplot(aes(x=EndDateWeek19,y=change,linetype=treated)) +
   geom_line() +
+  geom_point() +
   theme(legend.title=element_blank(),legend.position='bottom') +
   labs(x='Date',y='Year-over-year change in number of visits') +
   geom_vline(xintercept = as.numeric(as.Date("2019-04-02")), 
@@ -80,11 +81,21 @@ es = feols(change ~ i(time_to_treat,treat,ref=-1) |
              cluster = ~campus,
              data=event_df)
 
+es_table = etable(es, tex = TRUE)
+star_tex_write(es_table,file='results/tables/foot_traffic_effects.tex')
+
+event_df_temp = event_df %>% 
+  mutate(treated = ifelse(district == 43901 & Time >= 5,1,0)) %>%
+  mutate(campus = as.factor(campus),
+         year = as.factor(Time))
+mod = lm(change ~ treated + campus + year,data=event_df_temp)
+
 ggiplot(es,
         ci_level=0.95,
         main="",
-        xlab="",
-        ylab="",
+        xlab="Week",
+        ylab="Year-over-year change in foot traffic (2018-2019)",
         theme=theme(text=element_text(family="Georgia",size=8))) +
-  coord_cartesian(ylim=c(-0.5,0.5))
+  coord_cartesian(ylim=c(-0.5,0.5))+
+  geom_line()
 ggsave('results/figures/safegraph_event_study.png',width=7.5,height=6)
